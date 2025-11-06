@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Juego — Fundamentos Teóricos de la Sustentabilidad Crítica</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#98a2b3;--accent:#7dd3fc;--success:#86efac;--danger:#fb7185}
+    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071122 0%, #081226 60%);color:#e6eef6}
+    .wrap{max-width:1100px;margin:28px auto;padding:20px}
+    header{display:flex;gap:16px;align-items:center}
+    h1{font-size:1.4rem;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:0.95rem}
+    .topbar{display:flex;gap:12px;margin-top:12px;align-items:center}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6);}
+    .grid{display:grid;grid-template-columns:1fr 320px;gap:16px;margin-top:18px}
+    .side{position:sticky;top:20px}
+    .score{display:flex;align-items:center;gap:12px}
+    .score .points{font-weight:700;font-size:1.6rem;color:var(--accent)}
+    .controls{display:flex;flex-direction:column;gap:10px}
+    button.btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:8px;color:inherit;cursor:pointer}
+    button.btn.primary{background:linear-gradient(90deg,var(--accent),#60a5fa);color:#022;box-shadow:0 8px 20px rgba(29,78,216,0.12);}
+    .progress-wrap{background:rgba(255,255,255,0.03);border-radius:999px;padding:6px}
+    .progress{height:12px;border-radius:999px;background:linear-gradient(90deg,#0b1220 0,#0b1220 100%);position:relative}
+    .progress > i{position:absolute;left:0;top:0;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),#60a5fa);width:0%}
+    .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .meta .chip{background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:999px;font-size:0.85rem}
+    main .panel{margin-top:14px}
+    .question{font-size:1.05rem;margin-bottom:12px}
+    .answers{display:flex;flex-direction:column;gap:8px}
+    .ans{background:rgba(255,255,255,0.02);padding:10px;border-radius:10px;border:1px solid transparent;cursor:pointer}
+    .ans:hover{transform:translateY(-2px)}
+    .ans.selected{outline:2px solid rgba(125,211,252,0.12);}
+    .ans.correct{border:2px solid var(--success);background:linear-gradient(180deg, rgba(134,239,172,0.08), rgba(134,239,172,0.02))}
+    .ans.wrong{border:2px solid var(--danger);background:linear-gradient(180deg, rgba(251,113,133,0.06), rgba(251,113,133,0.02))}
+    footer.actions{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+    .small{font-size:0.85rem;color:var(--muted)}
+    .panel.right .section{margin-bottom:12px}
+    .glossary{max-height:240px;overflow:auto;padding-right:6px}
+    .term{display:flex;justify-content:space-between;padding:8px;border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.01)}
+    .timeline{display:flex;flex-direction:column;gap:8px}
+    .tl-item{display:flex;gap:8px;align-items:flex-start}
+    .badge{background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:8px;font-weight:600}
+    .match-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .pair{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;cursor:pointer}
+    .pair.selected{outline:2px solid rgba(125,211,252,0.12)}
+    .scenario{background:rgba(255,255,255,0.01);padding:10px;border-radius:8px}
+    .explain{margin-top:8px;font-size:0.9rem;color:var(--muted)}
+    .hidden{display:none}
+    .footer-note{margin-top:8px;color:var(--muted);font-size:0.85rem}
+    @media(max-width:880px){.grid{grid-template-columns:1fr;}.side{position:static}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="card" style="padding:12px 14px;display:flex;gap:12px;align-items:center;width:100%">
+        <div style="font-size:1.8rem">🌱</div>
+        <div style="flex:1">
+          <h1>Juego — Fundamentos de la Sustentabilidad Crítica</h1>
+          <p class="lead">Asignatura: Ecología Política (nivel superior). Objetivo: identificar y aplicar conceptos clave de Leff, Escobar y el giro epistémico.</p>
+        </div>
+        <div class="score">
+          <div class="small">Puntos</div>
+          <div class="points" id="score">0</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="topbar">
+      <div class="card" style="flex:1;display:flex;justify-content:space-between;align-items:center;padding:10px 14px">
+        <div class="controls" style="flex:1">
+          <div class="small">Dificultad actual: <strong id="difficulty">Fácil</strong></div>
+          <div class="progress-wrap" aria-hidden>
+            <div class="progress" style="margin-top:8px"><i id="prog"></i></div>
+          </div>
+          <div class="meta">
+            <div class="chip">Rondas: <span id="round">0</span>/12</div>
+            <div class="chip">Aciertos: <span id="correctCount">0</span></div>
+            <div class="chip">Errores: <span id="wrongCount">0</span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="btn primary" id="startBtn">Iniciar juego</button>
+          <button class="btn" id="resetBtn">Reiniciar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <main>
+        <div class="card panel">
+          <div id="gameArea">
+            <div id="welcome">
+              <h2>Instrucciones</h2>
+              <p class="small">Bienvenido(a). Este quiz progresivo te ayudará a identificar conceptos, vincular autores y aplicar teorías a casos reales. Objetivos: reconocer conceptos de Leff y Escobar, distinguir enfoques y aplicar Buen Vivir.</p>
+              <ul class="small">
+                <li>El juego tiene rondas de dificultad: Fácil → Intermedia → Avanzada.</li>
+                <li>Responde preguntas de opción múltiple, emparejamientos y escenarios prácticos.</li>
+                <li>Recibirás retroalimentación inmediata; podrás ver glosario y línea de tiempo en la derecha.</li>
+                <li>Modalidad de tiempo: libre. Puntuación visible y rúbrica formativa disponible al final.</li>
+              </ul>
+            </div>
+
+            <div id="roundArea" class="hidden">
+              <div class="question" id="questionText">Pregunta</div>
+              <div class="answers" id="answers"></div>
+
+              <div class="scenario hidden" id="scenarioArea"></div>
+
+              <footer class="actions">
+                <div class="small" id="feedback"></div>
+                <div>
+                  <button class="btn" id="skipBtn">Saltar</button>
+                  <button class="btn primary" id="submitBtn">Enviar</button>
+                </div>
+              </footer>
+
+              <div class="explain" id="explanation"></div>
+            </div>
+
+            <div id="endArea" class="hidden">
+              <h2>Resultado final 🎓</h2>
+              <p class="small">Puntos: <strong id="finalScore">0</strong></p>
+              <p id="finalText" class="small"></p>
+              <div style="margin-top:12px">
+                <button class="btn primary" id="reviewBtn">Revisar respuestas</button>
+                <button class="btn" id="newGameBtn">Jugar otra vez</button>
+              </div>
+              <div class="footer-note">Sugerencia pedagógica: usa este juego como complemento a lecturas de Leff y Escobar; pide a estudiantes un ensayo final que integre las decisiones tomadas en los escenarios.</div>
+            </div>
+
+            <div id="reviewArea" class="hidden" style="margin-top:12px"></div>
+
+          </div>
+        </div>
+
+        <div class="card panel" style="margin-top:12px">
+          <h3>Casos prácticos (ejemplos)</h3>
+          <div class="small">
+            <ol>
+              <li><strong>Agua vs. Empresa extractiva:</strong> derecha de la comunidad sobre el recurso; derecho a la reproducción social y territorialidad.</li>
+              <li><strong>Manejo de residuos urbanos:</strong> gobernanza participativa y justicia ambiental.</li>
+              <li><strong>Proyecto agroecológico andino:</strong> Buen Vivir, saberes locales, soberanía alimentaria.</li>
+            </ol>
+          </div>
+        </div>
+      </main>
+
+      <aside class="side">
+        <div class="card panel right">
+          <div class="section">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <strong>Glosario 📚</strong>
+              <button class="btn" id="toggleGloss">Abrir/Cerrar</button>
+            </div>
+            <div class="glossary" id="glossary">
+              <!-- dynamically filled -->
+            </div>
+          </div>
+
+          <div class="section">
+            <strong>Línea de tiempo 🕰️</strong>
+            <div class="timeline" id="timeline" style="margin-top:8px"></div>
+          </div>
+
+          <div class="section" style="margin-top:10px">
+            <strong>Actividad: Empareja</strong>
+            <div class="small">Relaciona concepto → autor/contexto</div>
+            <div class="match-grid" id="matchGrid" style="margin-top:8px"></div>
+            <div style="margin-top:8px;display:flex;gap:6px">
+              <button class="btn" id="checkMatch">Comprobar</button>
+              <button class="btn" id="shuffleMatch">Barajar</button>
+            </div>
+            <div id="matchFeedback" class="small" style="margin-top:6px;color:var(--muted)"></div>
+          </div>
+
+          <div class="section" style="margin-top:10px">
+            <strong>Rúbrica y evaluación</strong>
+            <div class="small" style="margin-top:8px">Criterios: conocimiento (40%), aplicación (30%), argumentación (20%), creatividad (10%). Retroalimentación en cada intento.</div>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+
+    <footer style="margin-top:18px;text-align:center;color:var(--muted);font-size:0.9rem">Juego diseñado para uso educativo — incluye referencias de Leff, Escobar y autores clásicos. Compatible cross-browser.</footer>
+  </div>
+
+  <script>
+    // --- Contenido educativo: preguntas, glosario y timeline ---
+    const glossaryData = [
+      {t:'Racionalidad ambiental',d:'Concepto central de Enrique Leff: modos de conocimiento y práctica que posibilitan la preservación socioecológica y la gestión sostenible.'},
+      {t:'Buen Vivir (Sumak Kawsay)',d:'Horizonte biocéntrico y colectivo que prioriza la vida en armonía con la naturaleza; asociado a cosmovisiones andinas y al debate posdesarrollo.'},
+      {t:'Giro epistémico',d:'Cambio en la consideración de saberes: reconocimiento de epistemologías del Sur, diálogo de saberes y decolonialidad.'},
+      {t:'Entropía epistemológica',d:'Pérdida de diversidad cognitiva y degradación de saberes locales por imposiciones del desarrollo occidental.'},
+      {t:'Pluriverso',d:'Propuesta de mundos múltiples y coexistentes; alternativa a la universalidad del desarrollo occidental (Escobar).'},
+      {t:'Sentipensar',d:'Integración de sentir y pensar en la relación con la tierra: propuesta para mover la política ambiental más allá de lo instrumental.'},
+      {t:'Colonialidad del poder',d:'Marco de Aníbal Quijano: estructura persistente de poder que jerarquiza saberes y sujetos, enlazada al desarrollo.'},
+      {t:'Racionalidad ambiental',d:'(ver Leff) Enfoque crítico sobre cómo producir conocimiento para la sustentabilidad.'}
+    ];
+
+    const timelineData = [
+      {year:1962,event:'Rachel Carson — Primavera Silenciosa (conciencia ecológica moderna)'},
+      {year:1972,event:'Club de Roma — Los Límites del Crecimiento (crítica al crecimiento ilimitado)'},
+      {year:1980,event:'Aldo Leopold — Ética de la Tierra (ética ambiental)'},
+      {year:1990,event:'Surge la ecología política: debates sobre poder, desigualdad y ambiente'},
+      {year:2000,event:'Enrique Leff y la racionalidad ambiental en América Latina'},
+      {year:2010,event:'Arturo Escobar — alternativas posdesarrollo; ecologías de saberes'},
+      {year:2015,event:'Buen Vivir y debates constitucionales en países andinos'}
+    ];
+
+    // Questions array with progressive difficulty
+    const questions = [
+      // Fácil
+      {id:1,level:'Fácil',type:'mcq',q:'¿Cuál autor desarrolló el concepto de "racionalidad ambiental" relacionado con modos de producción de conocimiento?',opts:['Arturo Escobar','Enrique Leff','Rachel Carson','Aldo Leopold'],a:1,exp:'Enrique Leff formuló la idea de racionalidad ambiental vinculando conocimiento, práctica y sostenibilidad.'},
+      {id:2,level:'Fácil',type:'mcq',q:'El concepto "Buen Vivir" (Sumak Kawsay) se asocia a:',opts:['Una visión biocéntrica y colectiva','Un modelo neoliberal de desarrollo','Un manual técnico de gobernanza','Una política exclusivamente urbana'],a:0,exp:'Buen Vivir prioriza relaciones humanas y no-humanas, armonía y cosmovisiones locales.'},
+      {id:3,level:'Fácil',type:'mcq',q:'"La invención del Tercer Mundo" fue escrito por:',opts:['Enrique Leff','Arturo Escobar','Aníbal Quijano','Santos'],a:1,exp:'Arturo Escobar es autor de obras clave sobre desarrollo, posdesarrollo y ecologías de saberes.'},
+
+      // Intermedia
+      {id:4,level:'Intermedia',type:'mcq',q:'¿Qué significa "entropía epistemológica" en este contexto?',opts:['Aumento de información científica','Pérdida de diversidad de saberes','Mejora de la educación superior','Crecimiento económico sostenible'],a:1,exp:'Se refiere a la pérdida o degradación de saberes locales frente a imposiciones.'},
+      {id:5,level:'Intermedia',type:'scenario',q:'Caso: Una empresa propone desviar un río para abrir una mina; la comunidad reclama el agua. Como líder comunitario, ¿qué prioridad aplicas?',opts:['Priorizar inversión y empleo','Priorizar derechos comunitarios y reproducción del territorio','Buscar equilibrio sin consultar a la comunidad'],a:1,exp:'La perspectiva de ecología política y Buen Vivir prioriza reproducción social y derechos territoriales.',criteria:{knowledge:15,application:25,argument:10}},
+      {id:6,level:'Intermedia',type:'mcq',q:'"Pluriverso" implica:',opts:['Un único modelo de desarrollo','Mundos múltiples y coexistentes','Privilegio de la ciencia occidental','Homogeneidad cultural'],a:1,exp:'Pluriverso propone múltiples formas de vida y conocimientos coexisten frente a la universalización.'},
+
+      // Avanzada
+      {id:7,level:'Avanzada',type:'mcq',q:'En el giro decolonial, ¿qué papel juega el "diálogo de saberes"?',opts:['Reemplaza todos los saberes locales','Reconoce y articula saberes diversos en pie de igualdad','Se limita a traducciones lingüísticas','Es una técnica administrativa'],a:1,exp:'Dialogar saberes implica reconocer condiciones desiguales y buscar co-producción de conocimiento.'},
+      {id:8,level:'Avanzada',type:'mcq',q:'La crítica posdesarrollo plantea:',opts:['Que el desarrollo occidental es la única vía viable','Alternativas que cuestionan el paradigma del desarrollo','Que las políticas ambientales no importan','Que la globalización debe acelerarse'],a:1,exp:'Posdesarrollo cuestiona supuestos del desarrollo, proponiendo alternativas locales y plurales.'},
+      {id:9,level:'Avanzada',type:'scenario',q:'Caso: Proyecto agroecológico en un valle andino — gobierno propone monocultivos y agroquímicos. Tú actúas como asesor técnico ¿Qué propuesta integras?',opts:['Modelo agroindustrial con subsidios','Agroecología y saberes locales con participación','Solo promover mercados de exportación'],a:1,exp:'Una propuesta alineada con Buen Vivir integra saberes locales, agroecología y participación.',criteria:{knowledge:20,application:30,argument:20}},
+
+    ];
+
+    // Matching data
+    let matchPairs = [
+      {left:'Racionalidad ambiental',right:'Enrique Leff (gestión del conocimiento)'} ,
+      {left:'Pluriverso',right:'Arturo Escobar (alternativas posdesarrollo)'} ,
+      {left:'Primavera Silenciosa',right:'Rachel Carson (conciencia ecológica)'}
+    ];
+
+    // --- State ---
+    let state = {score:0,round:0,correct:0,wrong:0,progress:0,answers:[],current:null};
+
+    // Utils
+    const el = id=>document.getElementById(id);
+    function setScore(n){state.score=n;el('score').textContent=n;}
+    function updateMeta(){el('round').textContent=state.round;el('correctCount').textContent=state.correct;el('wrongCount').textContent=state.wrong;el('prog').style.width = (state.round/12*100)+'%';}
+    function speak(text){/* optional audio feedback */ if(!text) return; try{const s=new SpeechSynthesisUtterance(text);s.lang='es-ES';speechSynthesis.cancel();speechSynthesis.speak(s);}catch(e){}
+    }
+
+    // Fill glossary & timeline
+    function initExtras(){
+      const g=el('glossary');g.innerHTML='';glossaryData.forEach(item=>{
+        const div=document.createElement('div');div.className='term';div.innerHTML=`<strong>${item.t}</strong><div class="small">${item.d}</div>`;g.appendChild(div);
+      });
+      const t=el('timeline');t.innerHTML='';timelineData.forEach(it=>{
+        const d=document.createElement('div');d.className='tl-item';d.innerHTML=`<div class="badge">${it.year}</div><div style="flex:1"><div style="font-weight:600">${it.event}</div></div>`;t.appendChild(d);
+      });
+    }
+
+    // Build matching UI
+    function buildMatch(){
+      const m=el('matchGrid');m.innerHTML='';
+      // shuffle
+      const lefts = matchPairs.map(p=>p.left).sort(()=>Math.random()-0.5);
+      const rights = matchPairs.map(p=>p.right).sort(()=>Math.random()-0.5);
+      lefts.forEach(txt=>{
+        const d=document.createElement('div');d.className='pair';d.dataset.side='L';d.textContent=txt;d.onclick=()=>selectPair(d);
+        m.appendChild(d);
+      });
+      rights.forEach(txt=>{
+        const d=document.createElement('div');d.className='pair';d.dataset.side='R';d.textContent=txt;d.onclick=()=>selectPair(d);
+        m.appendChild(d);
+      });
+    }
+
+    let selectedPair = null;
+    function selectPair(node){
+      const all = document.querySelectorAll('.pair');all.forEach(n=>n.classList.remove('selected'));
+      node.classList.add('selected');
+      selectedPair = node;
+    }
+
+    function checkMatch(){
+      const selected = document.querySelectorAll('.pair.selected');
+      if(selected.length!==2){el('matchFeedback').textContent='Selecciona un par (un concepto y una definición)';return}
+      const L = selected[0].dataset.side==='L'?selected[0].textContent:selected[1].textContent;
+      const R = selected[0].dataset.side==='R'?selected[0].textContent:selected[1].textContent;
+      const ok = matchPairs.some(p=>p.left===L && p.right===R);
+      if(ok){el('matchFeedback').style.color='var(--success)';el('matchFeedback').textContent='¡Correcto! Relación acertada.'; setScore(state.score+5); state.correct++; updateMeta();}
+      else{el('matchFeedback').style.color='var(--danger)';el('matchFeedback').textContent='No coincide. Revisa el glosario.'; state.wrong++; updateMeta();}
+      document.querySelectorAll('.pair').forEach(n=>n.classList.remove('selected'));
+    }
+
+    // Game flow
+    function startGame(){
+      state={score:0,round:0,correct:0,wrong:0,progress:0,answers:[],current:null};setScore(0);el('welcome').classList.add('hidden');el('endArea').classList.add('hidden');el('reviewArea').classList.add('hidden');el('roundArea').classList.remove('hidden');el('roundArea').focus();nextRound();
+    }
+
+    function nextRound(){
+      state.round++;
+      updateMeta();
+      // determine difficulty by round
+      let level = 'Fácil';
+      if(state.round>4 && state.round<=8) level='Intermedia';
+      if(state.round>8) level='Avanzada';
+      el('difficulty').textContent=level;
+      // pick a question not used
+      const remaining = questions.filter(q=>!state.answers.some(a=>a.qid===q.id) && q.level===level);
+      let q = remaining.length? remaining[Math.floor(Math.random()*remaining.length)] : questions.filter(q=>!state.answers.some(a=>a.qid===q.id))[0];
+      if(!q || state.round>12){endGame();return}
+      state.current = q;
+      renderQuestion(q);
+      // adjust progress bar
+      el('prog').style.width = (state.round/12*100)+'%';
+    }
+
+    function renderQuestion(q){
+      el('feedback').textContent = '';
+      el('explanation').textContent = '';
+      el('questionText').textContent = q.q;
+      const a = el('answers');a.innerHTML='';
+      el('scenarioArea').classList.add('hidden');
+      el('submitBtn').disabled=false;
+      if(q.type==='mcq'){
+        q.opts.forEach((opt,i)=>{
+          const d=document.createElement('div');d.className='ans';d.tabIndex=0;d.textContent=(String.fromCharCode(65+i))+'. '+opt;d.dataset.idx=i;d.onclick=()=>{a.querySelectorAll('.ans').forEach(n=>n.classList.remove('selected'));d.classList.add('selected');}
+          a.appendChild(d);
+        });
+      } else if(q.type==='scenario'){
+        // show scenario
+        el('scenarioArea').classList.remove('hidden');el('scenarioArea').textContent='';
+        const scen=document.createElement('div');scen.className='small';scen.innerHTML=q.q;
+        const optsWrap=document.createElement('div');optsWrap.className='answers';optsWrap.style.marginTop='10px';
+        q.opts.forEach((opt,i)=>{const d=document.createElement('div');d.className='ans';d.textContent=opt;d.dataset.idx=i;d.onclick=()=>{optsWrap.querySelectorAll('.ans').forEach(n=>n.classList.remove('selected'));d.classList.add('selected');};optsWrap.appendChild(d)});
+        el('scenarioArea').appendChild(scen);el('scenarioArea').appendChild(optsWrap);
+        // add justification box
+        const justify=document.createElement('textarea');justify.placeholder='Escribe una breve justificación (opcional, mejor puntuación si es coherente)';justify.style.width='100%';justify.style.marginTop='8px';justify.rows=3;justify.id='justif';el('scenarioArea').appendChild(justify);
+      }
+    }
+
+    function submitAnswer(){
+      const q = state.current; if(!q) return;
+      let selectedIdx = null;
+      if(q.type==='mcq'){
+        const sel = document.querySelector('.ans.selected'); if(!sel){el('feedback').textContent='Selecciona una respuesta.';return} selectedIdx=parseInt(sel.dataset.idx);
+        const correct = (selectedIdx===q.a);
+        if(correct){el('feedback').textContent='Correcto ✓';state.correct++;setScore(state.score + (q.level==='Fácil'?10:q.level==='Intermedia'?15:20));}
+        else{el('feedback').textContent='Incorrecto ✗';state.wrong++;setScore(state.score - (q.level==='Fácil'?2:5));}
+        // show right/wrong marking
+        document.querySelectorAll('.ans').forEach(n=>{n.classList.remove('correct','wrong');if(parseInt(n.dataset.idx)===q.a) n.classList.add('correct');if(parseInt(n.dataset.idx)===selectedIdx && !correct) n.classList.add('wrong');});
+        el('explanation').textContent = q.exp;
+        state.answers.push({qid:q.id,ans:selectedIdx,correct:selectedIdx===q.a});
+      } else if(q.type==='scenario'){
+        const sel = el('scenarioArea').querySelector('.ans.selected'); if(!sel){el('feedback').textContent='Selecciona una opción en el escenario.';return} selectedIdx=parseInt(sel.dataset.idx);
+        const just = el('justif')?el('justif').value.trim():'';
+        const correct = (selectedIdx===q.a);
+        // scoring heuristic: base + justification bonus (if contains keywords)
+        let add= (q.level==='Intermedia'?25:30);
+        if(!correct) add = 0; // main scoring requires correct priority
+        // simple keyword check for justification
+        const k = ['particip','territor','saber','agroecolog','consulta','comunidad','derech']
+        let bonus=0; if(just && k.some(kw=>just.toLowerCase().includes(kw))) bonus=10;
+        setScore(state.score + add + bonus);
+        state.correct += correct?1:0; state.wrong += correct?0:1;
+        el('explanation').textContent = q.exp + (just? '\nJustificación recibida: «'+just+'» (evaluación automática)' : '');
+        state.answers.push({qid:q.id,ans:selectedIdx,just:just,correct:correct});
+      }
+      el('submitBtn').disabled=true;
+      // after pause, next
+      setTimeout(()=>{if(state.round>=12) endGame(); else nextRound()},1200);
+      updateMeta();
+    }
+
+    function endGame(){
+      el('roundArea').classList.add('hidden');el('endArea').classList.remove('hidden');el('finalScore').textContent=state.score;el('finalText').textContent = generateFinalText();
+    }
+
+    function generateFinalText(){
+      let s = `Has completado ${state.round} rondas. Aciertos: ${state.correct}, errores: ${state.wrong}.`;
+      if(state.score>=200) s += ' Nivel de desempeño: Excelente — integras teoría y aplicación.';
+      else if(state.score>=120) s+=' Nivel: Bueno — hay comprensión sólida con áreas a fortalecer.';
+      else s+=' Nivel: Necesita mejora — revisa el glosario y la bibliografía.';
+      s += ' Recomendación: redacta un ensayo donde justifiques una política pública basada en Buen Vivir y racionalidad ambiental (rúbrica incluida).';
+      return s;
+    }
+
+    // Review
+    function reviewAnswers(){
+      el('reviewArea').classList.remove('hidden');el('reviewArea').innerHTML='';
+      state.answers.forEach(a=>{
+        const q = questions.find(x=>x.id===a.qid);
+        const div=document.createElement('div');div.className='card';div.style.marginBottom='8px';div.innerHTML=`<div style="font-weight:600">${q.q}</div><div class="small">Respuesta: ${a.ans!==undefined? (q.opts? q.opts[a.ans]:a.ans):'—'} — ${a.correct?'<span style="color:#86efac">Correcto</span>':'<span style="color:#fb7185">Incorrecto</span>'}</div><div class="small">Explicación: ${q.exp}</div>`;
+        el('reviewArea').appendChild(div);
+      });
+    }
+
+    // init handlers
+    document.addEventListener('DOMContentLoaded',()=>{
+      initExtras();buildMatch();
+      el('startBtn').onclick=startGame;el('resetBtn').onclick=()=>location.reload();el('submitBtn').onclick=submitAnswer;el('skipBtn').onclick=()=>{state.wrong++;updateMeta(); if(state.round>=12) endGame(); else nextRound();};el('reviewBtn').onclick=reviewAnswers;el('newGameBtn').onclick=()=>{startGame()};
+      el('toggleGloss').onclick=()=>{el('glossary').classList.toggle('hidden');}
+      el('checkMatch').onclick=checkMatch;el('shuffleMatch').onclick=buildMatch;
+      // keyboard accessibility: Enter to submit
+      document.addEventListener('keydown',e=>{ if(e.key==='Enter' && !el('roundArea').classList.contains('hidden')) submitAnswer(); });
+    });
+  </script>
+</body>
+</html>
